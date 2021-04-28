@@ -7,22 +7,22 @@ window.path = "http://localhost:3000/records";
 // Your retrieve function plus any additional functions go here ...
 function retrieve(options  = {})
 {
-  let page_iterator = 10;
+  const records_per_page = 10;
 
   // Construct URL String
   let uri = URI(window.path);
-  uri.addSearch("limit", page_iterator);
+  uri.addSearch("limit", records_per_page);
 
   let requested_page = 1;
   if (Object.keys(options).length > 0) {
     if (options.page) {
       requested_page = options.page;
-      let offset = (options.page * page_iterator) - page_iterator;
+      const offset = (options.page * records_per_page) - records_per_page;
       uri.addSearch("offset", offset);
     }
 
     if (options.colors) {
-      let colors = options.colors;
+      const colors = options.colors;
       uri.addSearch("color[]", colors);
     }
   }
@@ -33,7 +33,7 @@ function retrieve(options  = {})
     .then(response => response.json())
     .then(records => {
         let response = {};
-        let primary_colors = ["red", "blue", "yellow"];
+        const primary_colors = ["red", "blue", "yellow"];
 
         let ids = [];
         let opens = [];
@@ -44,9 +44,9 @@ function retrieve(options  = {})
 
           obj.isPrimary = primary_colors.includes(obj.color);
 
-          if (obj.disposition == "open") {
+          if (obj.disposition === "open") {
             opens.push(obj);
-          } else if(obj.isPrimary) {
+          } else if (obj.isPrimary) {
             closed_counter += 1;
           }
         }
@@ -63,7 +63,7 @@ function retrieve(options  = {})
         }
 
         // Determine Next Page
-        if (response.previousPage == null) {
+        if (response.previousPage === null) {
           if (response.ids.length > 0) {
             response.nextPage = 2;
           } else {
@@ -71,7 +71,7 @@ function retrieve(options  = {})
           }
           return response;
         } else {
-          return getLastPage(page_iterator)
+          return getLastPage(records_per_page)
             .then(last_page => {
               if (response.previousPage + 1 >= last_page) {
                 response.nextPage = null;
@@ -86,17 +86,16 @@ function retrieve(options  = {})
 }
 
 // Determine Last Possible Page
-function getLastPage(page_iterator)
+function getLastPage(records_per_page)
 {
   let records_uri = URI(window.path);
   records_uri.addSearch("limit", Number.MAX_SAFE_INTEGER);
   let records_string_uri = records_uri.toString();
-  let last_page = null;
   return fetch(records_string_uri)
     .then(response => response.json())
     .then(records => {
       let record_count = Object.keys(records).length;
-      last_page = Math.round(record_count/page_iterator);
+      let last_page = Math.round(record_count/records_per_page);
       return last_page;
     });
 }
